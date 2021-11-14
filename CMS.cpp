@@ -4,6 +4,7 @@
 #include<WinSock.h>
 #include<mysql.h>
 #include<string.h>
+#include<conio.h>
 
 using namespace std;
 #pragma comment(lib,"libmysql.lib")
@@ -18,6 +19,27 @@ char query[150]; //查询语句
 string username = "";
 // 定义是否是管理员的标志,默认不是
 bool isAdmin = false;
+//定义商品类型
+enum GoodsType//商品类别
+{
+    Food = 1,  //食品
+    Cosmetic,  //化妆品
+    Commodity,  //日用品
+    Drink,  //饮料
+    Stationery  //文具
+};
+
+//商品基本类型
+struct Goods//商品基本信息
+{
+    string code;//商品编号
+    string name;//商品名称
+    string brand;//生产厂家
+    double price;//商品价格
+    int num;//商品数量
+    GoodsType type;//商品类别
+    string date;//入库时间
+};
 
 
 //连接数据库的函数
@@ -35,8 +57,16 @@ void ChooseLoginCharacter(string &,bool &);
 string CustormerLogin(void);
 //管理员的登录页面
 string AdministratorLogin(void);
-
-
+//管理员选择操作的主函数
+void AdministratorOperation();
+//管理员添加商品的函数
+void AddGoodsInfo();
+//管理员修改商品信息的函数
+void EditGoodsInfo();
+//管理员删除商品的函数
+void DeleteGoodsInfo();
+//管理员查询商品的主函数
+void SelectGoodsMain();
 
 
 
@@ -45,7 +75,8 @@ int main()
 {
     //连接数据库
     ConnectDatabase();
-
+    //设置背景颜色
+    system("color f8");
     //进入系统初始化菜单
     InitMenu();
     //选择登录角色，进行登录操作
@@ -54,6 +85,7 @@ int main()
         if (isAdmin == true) {  //管理员菜单
             system("cls");//清屏
             AdministratorMenu();
+            AdministratorOperation();
         }
         else {  //顾客菜单
             system("cls");//清屏
@@ -159,7 +191,6 @@ void CustomerMenu() {
     printf("☆               【退 出  系 统】···(q)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
-    printf("请输入您要进行的操作的编号:");
 }
 
 //管理员主页面
@@ -171,20 +202,19 @@ void AdministratorMenu() {
     printf("☆                                                          ☆\n");
     printf("☆               【商 品  编 辑】···(b)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【商 品  删 除】···(c)                  ☆\n");
+    printf("☆               【商 品  删 除】···(b)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆               【商 品  查 询】···(c)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【营 收  统 计】···(c)                  ☆\n");
+    printf("☆               【营 收  统 计】···(d)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【订 单  管 理】···(c)                  ☆\n");
+    printf("☆               【订 单  管 理】···(e)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【修 改  密 码】···(c)                  ☆\n");
+    printf("☆               【修 改  密 码】···(f)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【退 出  系 统】···(b)                  ☆\n");
+    printf("☆               【退 出  系 统】···(q)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
-    printf("请输入您要进行的操作的编号:");
 }
 
 //选择登录角色函数
@@ -225,7 +255,15 @@ string CustormerLogin(void) {
     printf("请输入用户名:");
     cin >> username;
     printf("请输入密码:");
-    cin >> password;
+    char ch;
+    //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
+    ch = _getch();
+    while (ch != '\n' && ch != '\r')
+    {
+        password += ch;
+        cout << "*";
+        ch = _getch();
+    }
     //执行查询语句，这里是查询有没有对应的用户，users是表名，不用加引号，用strcpy也可以
     //sprintf_s(query, "select * from users where username="+ "hhh" );
     username = username + "'";
@@ -256,7 +294,15 @@ string AdministratorLogin(void) {
     printf("请输入用户名:");
     cin >> username;
     printf("请输入密码:");
-    cin >> password;
+    char ch;
+    //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
+    ch = _getch();
+    while (ch != '\n' && ch != '\r')
+    {
+        password += ch;
+        cout << "*";
+        ch = _getch();
+    }
     //执行查询语句，这里是查询有没有对应的用户，users是表名，不用加引号，用strcpy也可以
     //sprintf_s(query, "select * from users where username="+ "hhh" );
     username = username + "'";
@@ -281,4 +327,66 @@ string AdministratorLogin(void) {
     return "";
 }
 
+//管理员选择操作的主函数
+void AdministratorOperation() {
+    printf("请输入您要进行的操作的编号:");
+    //定义选择操作的标识
+    char WitchOperationForAdmin;
+    cin >> WitchOperationForAdmin;
+    //根据用户输入，选择不同的操作
+    switch (WitchOperationForAdmin)
+    {
+    case 'a':
+        AddGoodsInfo();
+        break;
+    case 'b':
+        EditGoodsInfo();
+        break;
+    case 'c':
+        DeleteGoodsInfo();
+        break;
+    case 'q':
+        exit(0);
+        system("pause");
+        break;
+    default:
+        break;
+    }
+}
 
+//管理员添加商品的函数
+void AddGoodsInfo() {
+    //定义类型为Goods的商品
+    Goods good;
+    //定义是否继续添加的标志，y标识继续添加，n表示不继续添加
+    char continueAdd = 'y';
+    do {
+        //是否已经输入类型的标志
+        bool flag = false;
+        cout<< "请选择商品类别:" <<endl;
+        cout<< "1.食品 2.化妆品 3.日用品 4.饮料 5.文具" << endl;
+        cout<< "请输入相应编号:";
+        do {
+
+        } while(flag == false);
+    } while (continueAdd == 'y');
+
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的添加☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    
+
+}
+
+//管理员修改商品的函数
+void EditGoodsInfo() {
+
+}
+
+//管理员删除商品的函数
+void DeleteGoodsInfo() {
+
+}
+
+//管理员查询商品的主函数
+void SelectGoodsMain() {
+
+}
