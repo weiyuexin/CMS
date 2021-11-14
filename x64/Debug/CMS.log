@@ -1,6 +1,6 @@
 ﻿  CMS.cpp
-F:\VS_WorkSpace\CMS\CMS\CMS.cpp(135,12): warning C4477: “printf”: 格式字符串“%d”需要类型“int”的参数，但可变参数 1 拥有了类型“uint64_t”
-F:\VS_WorkSpace\CMS\CMS\CMS.cpp(135,12): message : 请考虑在格式字符串中使用“%lld”
-F:\VS_WorkSpace\CMS\CMS\CMS.cpp(135,12): message : 请考虑在格式字符串中使用“%Id”
-F:\VS_WorkSpace\CMS\CMS\CMS.cpp(135,12): message : 请考虑在格式字符串中使用“%I64d”
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(121,12): warning C4477: “printf”: 格式字符串“%d”需要类型“int”的参数，但可变参数 1 拥有了类型“uint64_t”
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(121,12): message : 请考虑在格式字符串中使用“%lld”
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(121,12): message : 请考虑在格式字符串中使用“%Id”
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(121,12): message : 请考虑在格式字符串中使用“%I64d”
   CMS.vcxproj -> F:\VS_WorkSpace\CMS\CMS\x64\Debug\CMS.exe

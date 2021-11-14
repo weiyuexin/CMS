@@ -14,6 +14,11 @@ char field[32][32];    //存字段名二维数组
 MYSQL_RES* res; //这个结构代表返回行的一个查询结果集  
 MYSQL_ROW column; //一个行数据的类型安全(type-safe)的表示，表示数据行的列  
 char query[150]; //查询语句  
+//定义用户的用户名
+string username = "";
+// 定义是否是管理员的标志,默认不是
+bool isAdmin = false;
+
 
 //连接数据库的函数
 bool ConnectDatabase();
@@ -24,63 +29,43 @@ void InitMenu();
 void CustomerMenu();
 //仓库管理员的主菜单
 void AdministratorMenu();
+//选择登录角色
+void ChooseLoginCharacter(string &,bool &);
 //顾客登录页面
 string CustormerLogin(void);
 //管理员的登录页面
 string AdministratorLogin(void);
 
+
+
+
+
+//主函数
 int main()
 {
-    //定义用户的用户名
-    string username = "";
-    // 定义是否是管理员的标志
-    bool isAdmin = false;
     //连接数据库
     ConnectDatabase();
 
     //进入系统初始化菜单
     InitMenu();
-    //定义一个输入的参数，判断是顾客登录还是管理员登录，或者是退出
-    int WhoLogin;
-    while (cin >> WhoLogin)
-    {
-        //判断登录方式
-        switch (WhoLogin) {
-        case 0:
-            //退出系统
-            printf("您已成功退出系统!");
-            system("pause");
-            exit(0);
-        case 1:
-            username = (string)CustormerLogin();
-            break;
-        case 2:
-            username = (string)AdministratorLogin();
-            isAdmin = true;
-            break;
-        default:
-            printf("输入不合法，请重新输入:");
-            break;
-        }
-        //当输入用户名后就退出循环
-        if (username != "")
-            break;
-    }
+    //选择登录角色，进行登录操作
+    ChooseLoginCharacter(username,isAdmin);
     if (username != "") {
-        if (isAdmin)
-        {
-            cout << "欢迎，管理员 " << username << endl;
+        if (isAdmin == true) {  //管理员菜单
+            system("cls");//清屏
+            AdministratorMenu();
         }
-        else
-        {
-            cout << "欢迎，" << username << endl;
+        else {  //顾客菜单
+            system("cls");//清屏
+            CustomerMenu();
         }
     }
     else {
-        //登录失败
-        InitMenu();
+        cout << "登录失败，请重新登录" << endl;
+        username = "";
+        isAdmin = false;
+        ChooseLoginCharacter(username,isAdmin);
     }
-    
 
 
     //QueryDatabase1();
@@ -91,7 +76,7 @@ int main()
     return 0;
 }
 
-
+//连接数据库函数
 bool ConnectDatabase()
 {
     //初始化mysql  
@@ -150,7 +135,7 @@ bool QueryDatabase1()
     }
     return true;
 }
-
+//初始化页面，选择登录角色
 void InitMenu() {
     printf("***************【商品管理系统】**************\n");
     printf("*                                           *\n");
@@ -159,16 +144,81 @@ void InitMenu() {
     printf("*               0.退出  系统                *\n");
     printf("*                                           *\n");
     printf("*********************************************\n");
-    printf("请输入想要进行的操作，输入0退出系统:");
 }
+//顾客主页面
 void CustomerMenu() {
-
+    printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    printf("☆              欢迎使用商品管理系统(顾客端)                ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【查看商品列表】···(a)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【购 买  商 品】···(b)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【修 改  密 码】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【退 出  系 统】···(q)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    printf("请输入您要进行的操作的编号:");
 }
 
+//管理员主页面
 void AdministratorMenu() {
-
+    printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    printf("☆              欢迎使用商品管理系统(管理员端)              ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【商 品  进 货】···(a)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【商 品  编 辑】···(b)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【商 品  删 除】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【商 品  查 询】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【营 收  统 计】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【订 单  管 理】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【修 改  密 码】···(c)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆               【退 出  系 统】···(b)                  ☆\n");
+    printf("☆                                                          ☆\n");
+    printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    printf("请输入您要进行的操作的编号:");
 }
 
+//选择登录角色函数
+void ChooseLoginCharacter(string &username,bool &isAdmin) {
+    //定义一个输入的参数，判断是顾客登录还是管理员登录，或者是退出
+    int WhoLogin;
+    printf("请输入想要进行的操作，输入0退出系统:");
+    while (cin >> WhoLogin)
+    {
+        //判断登录方式
+        switch (WhoLogin) {
+        case 0:
+            //退出系统
+            printf("您已成功退出系统!");
+            system("pause");
+            exit(0);
+        case 2:
+            username = CustormerLogin();
+            break;
+        case 1:
+            username = AdministratorLogin();
+            isAdmin = TRUE;
+            break;
+        default:
+            printf("输入不合法，请重新输入:");
+            break;
+        }
+        if (WhoLogin != NULL)
+            break;
+    }
+}
+
+
+//顾客登录页面
 string CustormerLogin(void) {
     string username;
     string password;
@@ -199,12 +249,36 @@ string CustormerLogin(void) {
     }
     return "";
 }
-
+//管理员登录页面
 string AdministratorLogin(void) {
     string username;
-    printf("请输入管理员用户名:");
+    string password;
+    printf("请输入用户名:");
     cin >> username;
-    return username;
+    printf("请输入密码:");
+    cin >> password;
+    //执行查询语句，这里是查询有没有对应的用户，users是表名，不用加引号，用strcpy也可以
+    //sprintf_s(query, "select * from users where username="+ "hhh" );
+    username = username + "'";
+    password = password + "'";
+    sprintf_s(query, "%s%s%s%s", "select * from users where username='", username.c_str(), " and password='", password.c_str());
+    //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码 
+    mysql_query(mysql, "set names gbk");
+    //cout << query<<endl;
+    //执行SQL语句
+    mysql_query(mysql, query);
+    //获取结果集  
+    if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+    {
+        printf("Couldn't get result from %s\n", mysql_error(mysql));
+        return "";
+    }
+    while (column = mysql_fetch_row(res))
+    {
+        //printf("%10s\t\n", column[1]);
+        return column[1];
+    }
+    return "";
 }
 
 
