@@ -102,7 +102,7 @@ int main()
     //AddGoodsInfo();
 
     //QueryDatabase1();
-
+    //DeleteGoodsInfo();
 
 
     system("pause");
@@ -203,15 +203,15 @@ void AdministratorMenu() {
     printf("☆                                                          ☆\n");
     printf("☆               【商 品  编 辑】···(b)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【商 品  删 除】···(b)                  ☆\n");
+    printf("☆               【商 品  删 除】···(c)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【商 品  查 询】···(c)                  ☆\n");
+    printf("☆               【商 品  查 询】···(d)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【营 收  统 计】···(d)                  ☆\n");
+    printf("☆               【营 收  统 计】···(e)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【订 单  管 理】···(e)                  ☆\n");
+    printf("☆               【订 单  管 理】···(f)                  ☆\n");
     printf("☆                                                          ☆\n");
-    printf("☆               【修 改  密 码】···(f)                  ☆\n");
+    printf("☆               【修 改  密 码】···(g)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆               【退 出  系 统】···(q)                  ☆\n");
     printf("☆                                                          ☆\n");
@@ -436,7 +436,7 @@ void AddGoodsInfo() {
             while (continueAdd != 'y' && continueAdd != 'n')
             {
                 cout << "指令错误！！！！！<请输入y/n>" << endl;
-                cout << "数据添加成功！！！想继续输入吗(y/n):";
+                //cout << "数据添加成功！！！想继续输入吗(y/n):";
                 cin >> continueAdd;
             }
             
@@ -458,7 +458,42 @@ void EditGoodsInfo() {
 
 //管理员删除商品的函数
 void DeleteGoodsInfo() {
+    cout << endl;
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的删除☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    int id;//要删除的商品的编号
+    char flag = 'n';//是否继续的标志
+    do {//执行删除操作
+        cout << "请输入要删除的商品的编号:" << endl;
+        cin >> id;
+        char queren = 'n';
+        printf("确认要删除编号为%d的商品吗(y/n):", id);
+        cin >> queren;
+        if (queren == 'y') {
+            char deletesql[150];//数据库插入语句
+            mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+            sprintf_s(deletesql, "%s%d", "delete from goods where id=", id);
+            //cout << insert << "\n"; 
+            if (mysql_query(mysql, deletesql))    //执行SQL语句
+            {
+                cout << "商品删除失败！！！想继续删除吗(y/n):";
+            }
+            else {
+                cout << "商品删除成功！！！想继续删除吗(y/n):";
+            }
+        }
+        
+        cin >> flag;
+        while (flag != 'y' && flag != 'n')
+        {
+            cout << "指令错误！！！！！<请输入y/n>" << endl;
+            cin >> flag;
+        }
+    } while (flag == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    system("cls");
+    AdministratorMenu();//管理员主页面
 }
 
 //管理员查询商品的主函数
