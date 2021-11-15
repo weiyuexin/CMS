@@ -6,6 +6,7 @@
 #include<string.h>
 #include<conio.h>
 #include<ctime>
+#include<stdio.h>
 
 using namespace std;
 #pragma comment(lib,"libmysql.lib")
@@ -39,6 +40,7 @@ struct Goods//商品基本信息
     double pur_price;//商品售价
     double price;//商品售价
     int num;//商品库存
+    int salenum;//销量
     string type;//商品类别
     string date;//入库时间
 };
@@ -69,7 +71,8 @@ void EditGoodsInfo();
 void DeleteGoodsInfo();
 //管理员查询商品的主函数
 void SelectGoodsMain();
-
+//查询商品通过id
+Goods SelectGoodsById();
 
 
 //主函数
@@ -80,30 +83,30 @@ int main()
     //设置背景颜色
     system("color f8");
     //进入系统初始化菜单
-    InitMenu();
-    //选择登录角色，进行登录操作
-    ChooseLoginCharacter(username,isAdmin);
-    if (username != "") {
-        if (isAdmin == true) {  //管理员菜单
-            system("cls");//清屏
-            AdministratorMenu();
-        }
-        else {  //顾客菜单
-            system("cls");//清屏
-            CustomerMenu();
-        }
-    }
-    else {
-        cout << "登录失败，请重新登录" << endl;
-        username = "";
-        isAdmin = false;
-        ChooseLoginCharacter(username,isAdmin);
-    }
+    //InitMenu();
+    ////选择登录角色，进行登录操作
+    //ChooseLoginCharacter(username,isAdmin);
+    //if (username != "") {
+    //    if (isAdmin == true) {  //管理员菜单
+    //        system("cls");//清屏
+    //        AdministratorMenu();
+    //    }
+    //    else {  //顾客菜单
+    //        system("cls");//清屏
+    //        CustomerMenu();
+    //    }
+    //}
+    //else {
+    //    cout << "登录失败，请重新登录" << endl;
+    //    username = "";
+    //    isAdmin = false;
+    //    ChooseLoginCharacter(username,isAdmin);
+    //}
     //AddGoodsInfo();
 
     //QueryDatabase1();
     //DeleteGoodsInfo();
-
+    SelectGoodsById();
 
     system("pause");
     return 0;
@@ -500,3 +503,73 @@ void DeleteGoodsInfo() {
 void SelectGoodsMain() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆查询商品信息☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
 }
+
+//查询商品通过id
+Goods SelectGoodsById() {
+    cout << endl;
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆通过编号查询商品☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    Goods good;//存放返回的单条数据
+    int id;//要查询的商品的编号
+    char flag = 'n';//是否继续的标志
+    do {//执行删除操作
+        cout << "请输入要查询的商品的编号:" ;
+        cin >> id;
+        char selectsql[150];//数据库插入语句
+        mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+        sprintf_s(selectsql, "%s%d", "select * from goods where id=", id);
+        if (mysql_query(mysql, selectsql))    //执行SQL语句
+        {
+            cout << "该商品不存在！！！想继续查询吗(y/n):";
+        }
+        else {
+            //获取结果集  
+            if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+            {
+                printf("Couldn't get result from %s\n", mysql_error(mysql));
+            }
+            //是否有数据的标志
+            bool hasData = false;
+            //打印获取的数据
+            while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+            {
+                hasData = true;
+                good.code = (int)column[0];
+                good.name = column[1];
+                good.brand = column[2];
+                good.pur_price = strtod(column[3],NULL);
+                good.price = strtod(column[4], NULL);
+                good.type = column[5];
+                good.num = (int)column[6];
+                good.salenum = (int)column[7];
+                good.date = column[8];
+                cout << "id=" << good.code << endl;
+                cout << "name=" << good.name << endl;
+                cout << "brand=" << good.brand << endl;
+                cout << "type=" << good.type << endl;
+                //printf("%10s\t%10s\t%10s\t%10s%10s\t%10s\t%10s\t%10s\t%10s\n", good.code, good.name.c_str(), good.brand.c_str(), good.pur_price, good.price, good.type, good.num, good.salenum, good.date.c_str());  //column是列数组 
+                cout << "想继续查询吗(y/n):";
+            }
+            if (hasData == false) {
+                cout << "该商品不存在！！！想继续查询吗(y/n):";
+            }
+            
+        }
+        cin >> flag;
+        while (flag != 'y' && flag != 'n')
+        {
+            cout << "指令错误！！！！！<请输入y/n>" << endl;
+            cin >> flag;
+        }
+    } while (flag == 'y');
+    return good;
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    system("cls");
+    AdministratorMenu();//管理员主页面
+}
+
+
+
+
+
