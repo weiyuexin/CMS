@@ -5,6 +5,7 @@
 #include<mysql.h>
 #include<string.h>
 #include<conio.h>
+#include<ctime>
 
 using namespace std;
 #pragma comment(lib,"libmysql.lib")
@@ -32,12 +33,13 @@ enum GoodsType//商品类别
 //商品基本类型
 struct Goods//商品基本信息
 {
-    string code;//商品编号
+    int code;//商品编号
     string name;//商品名称
     string brand;//生产厂家
-    double price;//商品价格
-    int num;//商品数量
-    GoodsType type;//商品类别
+    double pur_price;//商品售价
+    double price;//商品售价
+    int num;//商品库存
+    string type;//商品类别
     string date;//入库时间
 };
 
@@ -85,7 +87,6 @@ int main()
         if (isAdmin == true) {  //管理员菜单
             system("cls");//清屏
             AdministratorMenu();
-            AdministratorOperation();
         }
         else {  //顾客菜单
             system("cls");//清屏
@@ -98,7 +99,7 @@ int main()
         isAdmin = false;
         ChooseLoginCharacter(username,isAdmin);
     }
-
+    //AddGoodsInfo();
 
     //QueryDatabase1();
 
@@ -215,6 +216,7 @@ void AdministratorMenu() {
     printf("☆               【退 出  系 统】···(q)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    AdministratorOperation();
 }
 
 //选择登录角色函数
@@ -337,12 +339,15 @@ void AdministratorOperation() {
     switch (WitchOperationForAdmin)
     {
     case 'a':
+        system("cls");
         AddGoodsInfo();
         break;
     case 'b':
+        system("cls");
         EditGoodsInfo();
         break;
     case 'c':
+        system("cls");
         DeleteGoodsInfo();
         break;
     case 'q':
@@ -356,8 +361,11 @@ void AdministratorOperation() {
 
 //管理员添加商品的函数
 void AddGoodsInfo() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的添加☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
     //定义类型为Goods的商品
     Goods good;
+    //输入的类型id
+    int typeId;
     //定义是否继续添加的标志，y标识继续添加，n表示不继续添加
     char continueAdd = 'y';
     do {
@@ -365,28 +373,95 @@ void AddGoodsInfo() {
         bool flag = false;
         cout<< "请选择商品类别:" <<endl;
         cout<< "1.食品 2.化妆品 3.日用品 4.饮料 5.文具" << endl;
-        cout<< "请输入相应编号:";
+        cout<< "请输入相应的类型编号:";
         do {
+            cin >> typeId;
+            //判断输入的类型编号是否存在
+            if (typeId >= 1 && typeId <= 5) {
+                flag = true;
+            }
+            else {
+                cout << "您选择的类型编号不存在!" << endl;
+                cout << "请选择正确的商品类型编号：" << endl;
+            }
+            if (typeId == 1)
+                good.type = "食品";
+            if (typeId == 2)
+                good.type = "化妆品";
+            if (typeId == 3)
+                good.type = "日用品";
+            if (typeId == 4)
+                good.type = "饮料";
+            if (typeId == 5)
+                good.type = "文具";
+            printf("您选择的商品类型是(%s)\n",good.type.c_str());
+
+            cout << "请输入商品编号:" << endl;
+            cin >> good.code;
+            cout << "请输入商品名称:" << endl;
+            cin >> good.name;
+            cout << "请输入商品生产厂家:" << endl;
+            cin >> good.brand;
+            cout << "请输入商品进价:" << endl;
+            cin >> good.pur_price;
+            cout << "请输入商品售价:" << endl;
+            cin >> good.price;
+            cout << "请输入商品数量:" << endl;
+            cin >> good.num;
+            cout << "请输入商品入库时间(格式：year/mon/day):" << endl;
+            cin >> good.date;
+
+           /* cout << good.code << endl;
+            cout << good.name.c_str() << endl;
+            cout << good.brand.c_str() << endl;
+            cout << good.pur_price << endl;
+            cout << good.price << endl;
+            cout << good.type.c_str() << endl;*/
+
+            char insert[150];//数据库插入语句
+            mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+            sprintf_s(insert, "%s%d%s%s%s%s%s%lf%s%lf%s%s%s%d%s%s%s", "insert into goods values(",good.code , ",'" , good.name.c_str() ,"','",good.brand.c_str(),"',",good.pur_price,",",good.price,",'",good.type.c_str(),"',",good.num,",0,'",good.date.c_str(),"')");
+            //cout << insert << "\n"; 
+            if (mysql_query(mysql, insert))    //执行SQL语句
+            {
+                cout << "商品添加失败！！！想继续添加吗(y/n):";
+            }
+            else {
+                cout << "商品添加成功！！！想继续添加吗(y/n):";
+            }
+            
+
+
+            cin >> continueAdd;
+            while (continueAdd != 'y' && continueAdd != 'n')
+            {
+                cout << "指令错误！！！！！<请输入y/n>" << endl;
+                cout << "数据添加成功！！！想继续输入吗(y/n):";
+                cin >> continueAdd;
+            }
+            
 
         } while(flag == false);
     } while (continueAdd == 'y');
-
-    cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的添加☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
-    
-
+    cout << endl;
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    system("cls");
+    AdministratorMenu();//管理员主页面
 }
 
 //管理员修改商品的函数
 void EditGoodsInfo() {
-
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的修改☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
 }
 
 //管理员删除商品的函数
 void DeleteGoodsInfo() {
-
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆商品信息的删除☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
 }
 
 //管理员查询商品的主函数
 void SelectGoodsMain() {
-
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆查询商品信息☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
 }
