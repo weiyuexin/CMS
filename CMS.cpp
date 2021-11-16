@@ -51,11 +51,14 @@ struct Goods//商品基本信息
 //商品订单基本类型
 struct OrderGoods//商品基本信息
 {
-    int code;//订单编号
+    string code;//订单编号
     string username; //下单人
     string goodname; //商品名称
     int goodid;//商品编号
     int num; //该商品的购买数量
+    double price;//售价
+    double sum_mony;//单品总价
+    int salesum;//商品销量，更新销量时要用到
     string date;//入库时间
 };
 
@@ -146,7 +149,7 @@ bool ConnectDatabase()
     //初始化mysql  
     mysql_init(mysql);
     //返回false则连接失败，返回true则连接成功  
-    if (!(mysql_real_connect(mysql, "1.15.60.193", "root", "Weiyuexin@123456", "cms", 0, NULL, 0))) //中间分别是主机，用户名，密码，数据库名，端口号（可以写默认0或者3306等），可以先写成参数再传进去  
+    if (!(mysql_real_connect(mysql, "localhost", "root", "root", "cms", 0, NULL, 0))) //中间分别是主机，用户名，密码，数据库名，端口号（可以写默认0或者3306等），可以先写成参数再传进去  
     {
         printf("Error connecting to database:%s\n", mysql_error(mysql));
         return false;
@@ -375,7 +378,11 @@ void CustormerOperation() {
         system("pause");
         break;
     default:
-        cout << "您的选择错误!" << endl;
+        cout << "您的选择错误!按任意键继续!!!" << endl;
+        system("pause");
+        getchar();
+        system("cls");
+        CustomerMenu();
         break;
     }
 }
@@ -1338,29 +1345,104 @@ void BuyGoods() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 购 买 商 品 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
     OrderGoods good[10];//保存订单信息
     int sum=0;//购买商品的种类数
-    double total_price;//所购买的商品的总价
+    double total_price = 0;//所购买的商品的总价
+    char is_continue_buy = 'y';//是否继续下单的标识
     char flag = 'y';//是否继续添加商品的标识
     do {
-        sum++;
-        cout << "请输入要购买的商品的编号:";
-        cin >> good[sum].goodid;
-        cout <<endl;
-        cout << "请输入要购买的数量:";
-        cin >> good[sum].num;
-        cout << endl;
+        do {
+            sum++;
+            cout << "请输入要购买的商品的编号:";
+            cin >> good[sum].goodid;
+            cout << endl;
+            cout << "请输入要购买的数量:";
+            cin >> good[sum].num;
+            cout << endl;
+
+            char selectsql[150];//数据库插入语句
+            mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+            sprintf_s(selectsql, "%s%d", "select * from goods where id=", good[sum].goodid);
+            if (mysql_query(mysql, selectsql))    //执行SQL语句
+            {
+                cout << "该商品不存在！！！想继续查询吗(y/n):";
+            }
+            else {
+                //获取结果集  
+                if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+                {
+                    printf("Couldn't get result from %s\n", mysql_error(mysql));
+                }
+                //打印获取的数据
+                while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+                {
+                    // 基于当前系统的当前日期/时间
+                    time_t now = time(0);
+                    good[sum].code = now;
+                    //cout << now << endl;
+                    good[sum].goodname = column[1];
+                    good[sum].price = strtod(column[4], NULL);
+                    good[sum].sum_mony = good[sum].price * good[sum].num;
+                    good[sum].salesum = atoi(column[7])+ good[sum].num;//更新后的销量
+                    total_price += good[sum].sum_mony;
+                }
+            }
 
 
 
-        cout << "是否继续添加商品(y/n):";
-        cin >> flag;
-    } while (flag == 'y');
-    cout << "当前订单的信息如下:" << endl;
-    cout << setiosflags(ios::left) << setw(10) << "商品编号" << setw(10) << "购买数量" << endl;
-    for (int i = 1; i <= sum; i++) {
-        cout << setiosflags(ios::left) << setw(10) << good[i].goodid << setw(10) << good[i].num << endl;
-    }
+            cout << "是否继续添加商品(y/n):";
+            cin >> flag;
+        } while (flag == 'y');
+        cout << "当前订单的信息如下:" << endl;
+        cout << setiosflags(ios::left) << setw(10) << "商品编号" << setw(10) << "商品名称" << setw(10) << "购买数量" << setw(10) << "合计(元)" << endl;
+        for (int i = 1; i <= sum; i++) {
+            cout << setiosflags(ios::left) << setw(10) << good[i].goodid << setw(10) << good[i].goodname << setw(10) << good[i].num << setw(10) << good[i].sum_mony << endl;
+        }
+        cout << setiosflags(ios::left) << setw(10) << " " << setw(10) << "" << setw(10) << "" << setw(10) << total_price << endl;
 
+        char isok = 'y';
+        cout << "确定要下单吗(y/n):";
+        cin >> isok;
+        if (isok == 'y') {
+            //保存到数据库
+            for (int i = 1; i <= sum; i++) {
+                char insert[150];//数据库插入语句
+                mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+                sprintf_s(insert, "%s%d%s%s%s%d%s%s%s%lf%s%d%s%lf%s", "insert into indent values('", good[i].code.c_str(), "','", username.c_str(), "',", good[i].goodid, ",'", good[i].goodname.c_str(), "',", good[i].price, ",", good[i].num, ",", total_price, ")");
+                //cout << insert << "\n"; 
+                if (mysql_query(mysql, insert))    //执行SQL语句
+                {
+                }
+                else {
 
+                }
+            }
+            //更新销量
+            for (int i = 1; i <= sum; i++) {
+                char update[150];//数据库插入语句
+                mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+                sprintf_s(update,"%s%d%s%d","update goods set salesnum=" , good[i].salesum," where id=",good[i].goodid);
+                cout << update << "\n";
+                if (mysql_query(mysql, update))    //执行SQL语句
+                {
+                }
+                else {
+                    cout << "成功" << endl;
+                }
+            }
+            printf("下单成功，您已付款%lf元。还要继续下单吗(y/n):", total_price);
+            cin >> is_continue_buy;
+        }
+        else {
+            cout << "订单取消!还要继续下单吗(y/n):";
+            cin >> is_continue_buy;
+        }
+        sum = 0;//下单商品数归零
+    } while (is_continue_buy == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    CustomerMenu();//管理员主页面
 }
 
 

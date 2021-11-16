@@ -1,3 +1,17 @@
 ﻿  CMS.cpp
-F:\VS_WorkSpace\CMS\CMS\CMS.cpp(1341,12): warning C4101: “total_price”: 未引用的局部变量
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(1379,38): warning C4244: “参数”: 从“time_t”转换到“const _Elem”，可能丢失数据
+          with
+          [
+              _Elem=char
+          ]
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(1409,35): warning C4477: “sprintf_s”: 格式字符串“%d”需要类型“int”的参数，但可变参数 2 拥有了类型“const _Elem *”
+          with
+          [
+              _Elem=char
+          ]
+F:\VS_WorkSpace\CMS\CMS\CMS.cpp(1409,35): warning C4313: “sprintf_s”: 格式字符串中的“%d”与“const _Elem *”类型的参数 2 冲突
+          with
+          [
+              _Elem=char
+          ]
   CMS.vcxproj -> F:\VS_WorkSpace\CMS\CMS\x64\Debug\CMS.exe
