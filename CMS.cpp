@@ -8,6 +8,7 @@
 #include<ctime>
 #include<stdio.h>
 #include<iomanip>
+#include "menu.h"
 
 using namespace std;
 #pragma comment(lib,"libmysql.lib")
@@ -47,12 +48,20 @@ struct Goods//商品基本信息
     string date;//入库时间
 };
 
+//商品订单基本类型
+struct OrderGoods//商品基本信息
+{
+    int code;//订单编号
+    string username; //下单人
+    string goodname; //商品名称
+    int goodid;//商品编号
+    int num; //该商品的购买数量
+    string date;//入库时间
+};
+
 
 //连接数据库的函数
 bool ConnectDatabase();
-bool QueryDatabase1();
-//初始化菜单，用来让用户选择登录
-void InitMenu();
 //顾客的主菜单,主要是展示商品，购买商品等功能
 void CustomerMenu();
 //仓库管理员的主菜单
@@ -61,6 +70,13 @@ void AdministratorMenu();
 void ChooseLoginCharacter(string &,bool &);
 //顾客登录页面
 string CustormerLogin(void);
+//顾客选择操作的主函数
+void CustormerOperation();
+//顾客浏览商品函数
+void BrowseGoods();
+//顾客购买商品函数
+void BuyGoods();
+
 //管理员的登录页面
 string AdministratorLogin(void);
 //管理员选择操作的主函数
@@ -120,13 +136,6 @@ int main()
     }
     
 
-
-    //AddGoodsInfo();
-
-    //QueryDatabase1();
-    //DeleteGoodsInfo();
-    //SelectGoodsById();
-
     system("pause");
     return 0;
 }
@@ -137,7 +146,7 @@ bool ConnectDatabase()
     //初始化mysql  
     mysql_init(mysql);
     //返回false则连接失败，返回true则连接成功  
-    if (!(mysql_real_connect(mysql, "localhost", "root", "root", "cms", 0, NULL, 0))) //中间分别是主机，用户名，密码，数据库名，端口号（可以写默认0或者3306等），可以先写成参数再传进去  
+    if (!(mysql_real_connect(mysql, "1.15.60.193", "root", "Weiyuexin@123456", "cms", 0, NULL, 0))) //中间分别是主机，用户名，密码，数据库名，端口号（可以写默认0或者3306等），可以先写成参数再传进去  
     {
         printf("Error connecting to database:%s\n", mysql_error(mysql));
         return false;
@@ -150,56 +159,6 @@ bool ConnectDatabase()
     return true;
 }
 
-bool QueryDatabase1()
-{
-    sprintf_s(query, "select * from users"); //执行查询语句，这里是查询所有，user是表名，不用加引号，用strcpy也可以  
-    mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
-    //返回0 查询成功，返回1查询失败  
-    if (mysql_query(mysql, query))    //执行SQL语句
-    {
-        printf("Query failed (%s)\n", mysql_error(mysql));
-        return false;
-    }
-    else
-    {
-        printf("query success\n");
-    }
-    //获取结果集  
-    if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
-    {
-        printf("Couldn't get result from %s\n", mysql_error(mysql));
-        return false;
-    }
-
-    //打印数据行数  
-    printf("number of dataline returned: %d\n", mysql_affected_rows(mysql));
-
-    //获取字段的信息  
-    char* str_field[32];  //定义一个字符串数组存储字段信息  
-    for (int i = 0; i < 4; i++)  //在已知字段数量的情况下获取字段名  
-    {
-        str_field[i] = mysql_fetch_field(res)->name;
-    }
-    for (int i = 0; i < 4; i++)  //打印字段  
-        printf("%10s\t", str_field[i]);
-    printf("\n");
-    //打印获取的数据  
-    while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
-    {
-        printf("%10s\t%10s\t%10s\t%10s\n", column[0], column[1], column[2], column[3]);  //column是列数组  
-    }
-    return true;
-}
-//初始化页面，选择登录角色
-void InitMenu() {
-    printf("***************【商品管理系统】**************\n");
-    printf("*                                           *\n");
-    printf("*               1.管理员登录                *\n");
-    printf("*               2.顾客  登录                *\n");
-    printf("*               0.退出  系统                *\n");
-    printf("*                                           *\n");
-    printf("*********************************************\n");
-}
 //顾客主页面
 void CustomerMenu() {
     printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
@@ -214,6 +173,7 @@ void CustomerMenu() {
     printf("☆               【退 出  系 统】···(q)                  ☆\n");
     printf("☆                                                          ☆\n");
     printf("☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆\n");
+    CustormerOperation();
 }
 
 //管理员主页面
@@ -271,11 +231,10 @@ void ChooseLoginCharacter(string &username,bool &isAdmin) {
     }
 }
 
-
 //顾客登录页面
 string CustormerLogin(void) {
-    string username;
-    string password;
+    //string username;
+    //string password
     printf("请输入用户名:");
     cin >> username;
     printf("请输入密码:");
@@ -290,9 +249,9 @@ string CustormerLogin(void) {
     }
     //执行查询语句，这里是查询有没有对应的用户，users是表名，不用加引号，用strcpy也可以
     //sprintf_s(query, "select * from users where username="+ "hhh" );
-    username = username + "'";
-    password = password + "'";
-    sprintf_s(query, "%s%s%s%s", "select * from users where username='", username.c_str()," and password='",password.c_str());
+    username = username;
+    password = password;
+    sprintf_s(query, "%s%s%s%s%s", "select * from users where username='", username.c_str(),"' and password='",password.c_str(),"'");
     //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码 
     mysql_query(mysql, "set names gbk"); 
     //cout << query<<endl;
@@ -311,6 +270,7 @@ string CustormerLogin(void) {
     }
     return "";
 }
+
 //管理员登录页面
 string AdministratorLogin(void) {
     //string username;
@@ -345,6 +305,7 @@ string AdministratorLogin(void) {
     while (column = mysql_fetch_row(res))
     {
         //printf("%10s\t\n", column[1]);
+        isAdmin = true;
         return column[1];
     }
     return "";
@@ -384,6 +345,37 @@ void AdministratorOperation() {
         system("pause");
         break;
     default:
+        break;
+    }
+}
+
+//顾客选择操作的主函数
+void CustormerOperation() {
+    printf("请输入您要进行的操作的编号:");
+    //定义选择操作的标识
+    char WitchOperationForAdmin;
+    cin >> WitchOperationForAdmin;
+    //根据用户输入，选择不同的操作
+    switch (WitchOperationForAdmin)
+    {
+    case 'a':
+        system("cls");
+        BrowseGoods();
+        break;
+    case 'b':
+        system("cls");
+        BuyGoods();
+        break;
+    case 'c':
+        system("cls");
+        ChangePassword();
+        break;
+    case 'q':
+        exit(0);
+        system("pause");
+        break;
+    default:
+        cout << "您的选择错误!" << endl;
         break;
     }
 }
@@ -476,6 +468,7 @@ void AddGoodsInfo() {
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
     system("pause");
+    getchar();
     system("cls");
     AdministratorMenu();//管理员主页面
 }
@@ -605,6 +598,8 @@ void EditGoodsInfo() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     AdministratorMenu();//选择查询方式
 }
@@ -645,6 +640,7 @@ void DeleteGoodsInfo() {
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
     system("pause");
+    getchar();
     system("cls");
     AdministratorMenu();//管理员主页面
 }
@@ -664,6 +660,7 @@ void SelectGoodsMain() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
     SelectMethod();
 }
+
 //选择查询方式的函数
 void SelectMethod() {
     cout << "请输入您想要进行的查询操作方式:" <<endl;
@@ -702,6 +699,7 @@ void SelectMethod() {
         break;
     }
 }
+
 //查询商品通过id
 void SelectGoodsById() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆通 过 编 号 查 询 商 品☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -766,9 +764,12 @@ void SelectGoodsById() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
+
 //查询商品通过商品名称
 void SelectGoodsByName() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆通 过 商 品 名 称 查 询 商 品☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -843,9 +844,12 @@ void SelectGoodsByName() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
+
 //查询商品通过生产厂商
 void SelectGoodsByBrand() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆通 过 商 品 厂 商 查 询 商 品☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -920,9 +924,12 @@ void SelectGoodsByBrand() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
+
 //查询商品通过商品类型
 void SelectGoodsByType() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆通 过 商 品 厂 商 查 询 商 品☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -997,9 +1004,12 @@ void SelectGoodsByType() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
+
 //查询商品通过价格排序
 void SelectGoodsByPriceSort() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆按 照 商 品 价 格 排 序☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -1084,9 +1094,12 @@ void SelectGoodsByPriceSort() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
+
 //查询商品通过销量排序
 void SelectGoodsBySaleSort() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆按 照 商 品 销 量 排 序☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -1171,6 +1184,8 @@ void SelectGoodsBySaleSort() {
     } while (flag == 'y');
     cout << "……信息处理完毕……" << endl;
     cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
     system("cls");
     SelectGoodsMain();//选择查询方式
 }
@@ -1181,13 +1196,172 @@ void ChangePassword() {
     string old_password;
     string new_password1;
     string new_password2;
-    cout << "请输入旧密码:";
-    /*cin >> old_password;
-    cout << endl;*/
-    //if () {//判断输入的旧密码是否正确
+    char flag = 'y';//是否重试
+    do {
+        cout << "请输入旧密码:";
+        char ch;
+        //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
+        ch = _getch();
+        while (ch != '\n' && ch != '\r')
+        {
+            old_password += ch;
+            cout << "*";
+            ch = _getch();
+        }
+        cout << endl;
+        if (old_password == password) {//判断输入的旧密码是否正确
+            cout << "请输入新密码:";
+            //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
+            ch = _getch();
+            while (ch != '\n' && ch != '\r')
+            {
+                new_password1 += ch;
+                cout << "*";
+                ch = _getch();
+            }
+            cout << "\n请重新输入新密码:";
+            //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
+            ch = _getch();
+            while (ch != '\n' && ch != '\r')
+            {
+                new_password2 += ch;
+                cout << "*";
+                ch = _getch();
+            }
+            cout << endl;
 
-    //}
-    cout << username << endl;
-    cout << password <<endl;
+            //判断两次输入的密码是否相同
+            if (new_password1 == new_password2) {
+                char update[150];//数据库插入语句
+                mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+                sprintf_s(update, "%s%s%s%s%s", "update users set password='", new_password1.c_str(), "' where username='", username.c_str(), "'");
+                // cout << update << "\n";
+                if (mysql_query(mysql, update))    //执行SQL语句
+                {
+                    cout << "密码修改失败，是否重试(y/n):";
+                    cin >> flag;
+                }
+                else {
+                    cout << "密码修改成功，下次登录时请使用新密码!" << endl;
+                    flag = 'n';
+                }
+            }
+            else {
+                cout << "两次输入的密码不相同,是否重试(y/n):";
+                cin >> flag;
+            }
+        }
+        else {
+            cout << "原密码错误，是否重试(y/n):";
+            cin >> flag;
+        }
+        old_password = "";
+        new_password1 = "";
+        new_password2 = "";
+    } while (flag == 'y');
+
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    if (isAdmin == true) {
+        AdministratorMenu();//选择查询方式
+    }
+    else {
+        CustomerMenu();
+    }
+}
+
+//顾客浏览商品函数
+void BrowseGoods() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 商 品 列 表 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    Goods good;
+    char selectsql[150];//数据库插入语句
+    mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+    sprintf_s(selectsql, "%s", "select * from goods");
+    //cout << selectsql << endl;
+    if (mysql_query(mysql, selectsql))    //执行SQL语句
+    {
+        cout << "商品列表为空！！！";
+    }
+    else {
+        //获取结果集  
+        if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+        {
+            printf("Couldn't get result from %s\n", mysql_error(mysql));
+        }
+        //是否有数据的标志
+        bool hasData = false;
+        //打印获取的数据
+        bool has_out = false;
+        while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+        {
+            hasData = true;
+            if (has_out == false) {
+                has_out = true;
+                cout << "所以商品信息如下：\n" << endl;
+                cout << setiosflags(ios::left) << setw(10) << "编号" << setw(16) << "商品名称" << setw(15)
+                    << "生产厂家" << setw(10) << "商品类别"  << setw(10) <<
+                    "售价" << setw(10) << "库存" << setw(10) << "销量" << setw(10) << "入库时间" << endl;
+            }
+            //sum = atoi(column[9]);//获取查询到的数据条数
+            //cout << sum;
+
+            good.code = atoi(column[0]);//char转换成int
+            good.name = column[1];
+            good.brand = column[2];
+            good.pur_price = strtod(column[3], NULL);
+            good.price = strtod(column[4], NULL);
+            good.type = column[5];
+            good.num = atoi(column[6]);
+            good.salenum = atoi(column[7]);
+            good.date = column[8];
+
+
+            cout << setiosflags(ios::left) << setw(10) << good.code << setw(16) << good.name << setw(15)
+                << good.brand << setw(10) << good.type << setw(10) <<
+                good.price << setw(10) << good.num << setw(10) << good.salenum << setw(10) << good.date << endl;
+
+        }
+    }
+
+    cout << "\n……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    CustomerMenu();//返回顾客主菜单
+}
+
+//顾客购买商品函数
+void BuyGoods() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 购 买 商 品 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    OrderGoods good[10];//保存订单信息
+    int sum=0;//购买商品的种类数
+    double total_price;//所购买的商品的总价
+    char flag = 'y';//是否继续添加商品的标识
+    do {
+        sum++;
+        cout << "请输入要购买的商品的编号:";
+        cin >> good[sum].goodid;
+        cout <<endl;
+        cout << "请输入要购买的数量:";
+        cin >> good[sum].num;
+        cout << endl;
+
+
+
+        cout << "是否继续添加商品(y/n):";
+        cin >> flag;
+    } while (flag == 'y');
+    cout << "当前订单的信息如下:" << endl;
+    cout << setiosflags(ios::left) << setw(10) << "商品编号" << setw(10) << "购买数量" << endl;
+    for (int i = 1; i <= sum; i++) {
+        cout << setiosflags(ios::left) << setw(10) << good[i].goodid << setw(10) << good[i].num << endl;
+    }
+
 
 }
+
+
+
