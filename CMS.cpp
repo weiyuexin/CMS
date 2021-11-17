@@ -1,4 +1,8 @@
-﻿#define _CRT_SECURE_NO_WARNINGS
+﻿/*
+*  基于C++、MySQL8开发的商品管理系统
+*  author:韦月鑫、骆伟培、李娜、田悦琳
+*/
+#define _CRT_SECURE_NO_WARNINGS
 #include<iostream>
 #include<Windows.h>
 #include<WinSock.h>
@@ -60,6 +64,7 @@ struct OrderGoods//商品基本信息
     double sum_mony;//单品总价
     int salesum;//商品销量，更新销量时要用到
     string date;//入库时间
+    double sum_price;//订单总价
 };
 
 
@@ -92,6 +97,12 @@ void EditGoodsInfo();
 void DeleteGoodsInfo();
 //管理员查询商品的主函数
 void SelectGoodsMain();
+//管理员选择订单操作方式函数
+void SelectOrderOperation();
+//管理员查询订单函数
+void SelectOrder();
+//管理员删除订单函数
+void DeleteOrder();
 //选择查询方式的函数
 void SelectMethod();
 //查询商品通过id
@@ -106,6 +117,16 @@ void SelectGoodsByType();
 void SelectGoodsByPriceSort();
 //查询商品通过销量排序
 void SelectGoodsBySaleSort();
+//营收统计菜单
+void RevenueMenu();
+//选择营收统计方式
+void SelectRevenue();
+//单个商品营收统计
+void RevenueById();
+//所有商品营收统计
+void RevenueAll();
+//管理员订单管理函数
+void OrderManagementMenu();
 //修改用户的密码函数
 void ChangePassword();
 
@@ -238,9 +259,9 @@ void ChooseLoginCharacter(string &username,bool &isAdmin) {
 string CustormerLogin(void) {
     //string username;
     //string password
-    printf("请输入用户名:");
+    printf("请输入顾客用户名:");
     cin >> username;
-    printf("请输入密码:");
+    printf("请输入顾客密码:");
     char ch;
     //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
     ch = _getch();
@@ -277,9 +298,9 @@ string CustormerLogin(void) {
 //管理员登录页面
 string AdministratorLogin(void) {
     //string username;
-    printf("请输入用户名:");
+    printf("请输入管理员的用户名:");
     cin >> username;
-    printf("请输入密码:");
+    printf("请输入管理员密码:");
     char ch;
     //使用getch()获取输入的密码，并替换输出为*,做到保密的效果
     ch = _getch();
@@ -325,25 +346,33 @@ void AdministratorOperation() {
     {
     case 'a':
         system("cls");
-        AddGoodsInfo();
+        AddGoodsInfo();//添加商品
         break;
     case 'b':
         system("cls");
-        EditGoodsInfo();
+        EditGoodsInfo();//修改商品
         break;
     case 'c':
         system("cls");
-        DeleteGoodsInfo();
+        DeleteGoodsInfo();//删除商品
         break;
     case 'd':
         system("cls");
-        SelectGoodsMain();
+        SelectGoodsMain();//查询商品
+        break;
+    case 'e':
+        system("cls");
+        RevenueMenu();//订单管理
+        break;
+    case 'f':
+        system("cls");
+        OrderManagementMenu();//订单管理
         break;
     case 'g':
         system("cls");
-        ChangePassword();
+        ChangePassword();//修改密码
         break;
-    case 'q':
+    case 'q':    //退出系统
         exit(0);
         system("pause");
         break;
@@ -529,7 +558,7 @@ void EditGoodsInfo() {
                 int which_update;//定义一个变量，表示要修改的选项
                 char continue_update = 'y';
                 do {
-                    cout << "请输入想要修改的内容对应的编号(0:商品编号   1:商品名称   2:商品厂商    3:售价    4:进价    5:库存):" << endl;
+                    cout << "请输入想要修改的内容对应的编号(1:商品名称   2:商品厂商    3:售价    4:进价    5:库存):" << endl;
                     cin >> which_update;
                     switch (which_update) {
                     case 0:
@@ -574,7 +603,7 @@ void EditGoodsInfo() {
                 if (flag == 'y') {//进行修改操作
                     char update[150];//数据库插入语句
                     mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
-                    sprintf_s(update, "%s%s%s%s%s%lf%s%lf%s%d%s%d%s", "update goods set name='", good.name.c_str(), "',brand='", good.brand.c_str(), "',purprice=", good.pur_price, ",saleprice=", good.price, ",num=", good.num, ",salesnum=",good.salenum," where id=7;");
+                    sprintf_s(update, "%s%s%s%s%s%lf%s%lf%s%d%s%d%s%d", "update goods set name='", good.name.c_str(), "',brand='", good.brand.c_str(), "',purprice=", good.pur_price, ",saleprice=", good.price, ",num=", good.num, ",salesnum=", good.salenum, " where id=",id);
                    // cout << update << "\n";
                     if (mysql_query(mysql, update))    //执行SQL语句
                     {
@@ -752,9 +781,6 @@ void SelectGoodsById() {
                 cout << setiosflags(ios::left) << setw(10) << good.code << setw(16) << good.name << setw(15)
                     << good.brand << setw(10) << good.type << setw(10) << good.pur_price << setw(10) <<
                     good.price << setw(10) << good.num << setw(10) << good.salenum << setw(10) << good.date << endl;
-
-
-
                 cout << "想要继续查询吗(y/n):";
             }
             if (hasData == false) {
@@ -1197,6 +1223,150 @@ void SelectGoodsBySaleSort() {
     SelectGoodsMain();//选择查询方式
 }
 
+//管理员订单管理主函数
+void OrderManagementMenu() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆订 单 管 理☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【查 询 订 单】···(a)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【删 除 订 单】···(b)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【返       回】···(q)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    SelectOrderOperation();//选择操作
+}
+
+//管理员选择订单操作函数
+void SelectOrderOperation() {
+    char OrderOperation; //订单操作方式选择
+    char flag = 'y';   //是否继续选择其他操作
+    do {
+        cout << "请选择您要进行的订单操作方式(输入q返回上一级):";
+        cin >> OrderOperation;
+        switch (OrderOperation) {
+        case 'a':
+            system("cls");
+            SelectOrder();
+            break;
+        case 'b':
+            system("cls");
+            DeleteOrder();
+            break;
+        case 'q':
+            system("cls");
+            AdministratorMenu();
+            break;
+        default:
+            cout << "选择错误，是否继续(y/n)：" << endl;
+            cin >> flag;
+            break;
+        }
+    } while (flag == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    AdministratorMenu();//选择查询方式
+}
+
+//管理员查询订单函数
+void SelectOrder() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆按 照 商 品 销 量 排 序☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    OrderGoods good;//存放返回的订单的单条数据
+    int sum = 0;//查询到的数据的总量
+    char selectsql[150];//数据库查询语句
+    mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+    sprintf_s(selectsql, "select * from indent");
+    if (mysql_query(mysql, selectsql))    //执行SQL语句
+    {
+        cout << "没有相关的商品！！！想继续查询吗(y/n):";
+    }
+    else {
+        //获取结果集  
+        if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+        {
+            printf("Couldn't get result from %s\n", mysql_error(mysql));
+        }
+        //是否有数据的标志
+        bool hasData = false;
+        //打印获取的数据
+        bool has_out = false;
+        while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+        {
+            hasData = true;
+            if (has_out == false) {
+                has_out = true;
+                cout << "所以订单如下：" << endl;
+                cout << setiosflags(ios::left) << setw(10) << "订单编号" << setw(10) << "下单人" << setw(15)
+                    << "商品编号" << setw(10) << "商品名称" << setw(10) << "售价" << setw(10) <<
+                    "数量" << setw(10) << "订单总价"  << endl;
+            }
+            good.code = column[0];
+            good.username = column[1];
+            good.goodid = atoi(column[2]);
+            good.goodname = column[3];
+            good.price = strtod(column[4], NULL);
+            good.num = atoi(column[5]);
+            good.sum_price = strtod(column[6],NULL);
+
+            //cout << good.code;
+            cout << setiosflags(ios::left) << setw(10) << good.code << setw(10) << good.username << setw(15)
+                    << good.goodid << setw(10) << good.goodname << setw(10) << good.price << setw(10) <<
+                    good.num << setw(10) << good.sum_price << endl;
+        }
+    }
+    cout << endl;
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    OrderManagementMenu();//选择查询方式
+}
+
+//管理员删除订单函数
+void DeleteOrder() {
+    cout << endl;
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆ 删 除 订 单 ☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    string id;//要删除的商品的编号
+    char flag = 'n';//是否继续的标志
+    do {//执行删除操作
+        cout << "请输入要删除的订单的编号:" << endl;
+        cin >> id;
+        char queren = 'n';
+        printf("确认要删除编号为%s的订单吗(y/n):", id.c_str());
+        cin >> queren;
+        if (queren == 'y') {
+            char deletesql[150];//数据库插入语句
+            mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+            sprintf_s(deletesql, "%s%s", "delete from indent where id=", id.c_str());
+            //cout << insert << "\n"; 
+            if (mysql_query(mysql, deletesql))    //执行SQL语句
+            {
+                cout << "订单删除失败！！！想继续删除吗(y/n):";
+            }
+            else {
+                cout << "订单删除成功！！！想继续删除吗(y/n):";
+            }
+        }
+
+        cin >> flag;
+        while (flag != 'y' && flag != 'n')
+        {
+            cout << "指令错误！！！！！<请输入y/n>" << endl;
+            cin >> flag;
+        }
+    } while (flag == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    AdministratorMenu();//管理员主页面
+}
+
 //修改用户的密码函数
 void ChangePassword() {
     cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆修 改 密 码☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
@@ -1349,6 +1519,8 @@ void BuyGoods() {
     char is_continue_buy = 'y';//是否继续下单的标识
     char flag = 'y';//是否继续添加商品的标识
     do {
+        // 基于当前系统的当前日期/时间
+        time_t now = time(0);
         do {
             sum++;
             cout << "请输入要购买的商品的编号:";
@@ -1374,10 +1546,7 @@ void BuyGoods() {
                 //打印获取的数据
                 while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
                 {
-                    // 基于当前系统的当前日期/时间
-                    time_t now = time(0);
                     good[sum].code = now;
-                    //cout << now << endl;
                     good[sum].goodname = column[1];
                     good[sum].price = strtod(column[4], NULL);
                     good[sum].sum_mony = good[sum].price * good[sum].num;
@@ -1385,9 +1554,6 @@ void BuyGoods() {
                     total_price += good[sum].sum_mony;
                 }
             }
-
-
-
             cout << "是否继续添加商品(y/n):";
             cin >> flag;
         } while (flag == 'y');
@@ -1420,12 +1586,12 @@ void BuyGoods() {
                 char update[150];//数据库插入语句
                 mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
                 sprintf_s(update,"%s%d%s%d","update goods set salesnum=" , good[i].salesum," where id=",good[i].goodid);
-                cout << update << "\n";
+                //cout << update << "\n";
                 if (mysql_query(mysql, update))    //执行SQL语句
                 {
                 }
                 else {
-                    cout << "成功" << endl;
+                    //cout << "成功" << endl;
                 }
             }
             printf("下单成功，您已付款%lf元。还要继续下单吗(y/n):", total_price);
@@ -1446,4 +1612,178 @@ void BuyGoods() {
 }
 
 
+//营收统计菜单
+void RevenueMenu() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 营 收 统 计 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【单个商品营收】···(a)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【 总  营  收 】···(b)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆                              【 返      回 】···(q)                            ☆" << endl;
+    cout << "☆                                                                                  ☆" << endl;
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    SelectRevenue();//选择操作
+}
 
+//选择营收统计方式
+void SelectRevenue() {
+    char OrderOperation; //订单操作方式选择
+    char flag = 'y';   //是否继续选择其他操作
+    do {
+        cout << "请选择您要进行的营收统计方式(输入q返回上一级目录):";
+        cin >> OrderOperation;
+        switch (OrderOperation) {
+        case 'a':
+            system("cls");
+            RevenueById();
+            break;
+        case 'b':
+            system("cls");
+            RevenueAll();
+            break;
+        case 'q':
+            system("cls");
+            AdministratorMenu();
+            break;
+        default:
+            cout << "选择错误，是否继续(y/n)：" << endl;
+            cin >> flag;
+            break;
+        }
+    } while (flag == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    AdministratorMenu();//选择查询方式
+}
+//营收统计
+void RevenueById() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 单 个 商 品 营 收 统 计 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    Goods good;//存放返回的单条数据
+    int id;//要查询的商品的编号
+    char flag = 'n';//是否继续的标志
+    do {//执行查询操作
+        cout << "请输入要查询收益的的商品的编号:";
+        cin >> id;
+        char selectsql[150];//数据库插入语句
+        mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+        sprintf_s(selectsql, "%s%d", "select * from goods where id=", id);
+        if (mysql_query(mysql, selectsql))    //执行SQL语句
+        {
+            cout << "该商品不存在！！！想继续查询吗(y/n):";
+        }
+        else {
+            //获取结果集  
+            if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+            {
+                printf("Couldn't get result from %s\n", mysql_error(mysql));
+            }
+            //是否有数据的标志
+            bool hasData = false;
+            //打印获取的数据
+            while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+            {
+                hasData = true;
+                good.code = atoi(column[0]);//char转换成int
+                good.name = column[1];
+                good.brand = column[2];
+                good.pur_price = strtod(column[3], NULL);
+                good.price = strtod(column[4], NULL);
+                good.type = column[5];
+                good.num = atoi(column[6]);
+                good.salenum = atoi(column[7]);
+                good.date = column[8];
+
+                cout << "商品详细信息为：" << endl;
+                cout << setiosflags(ios::left) << setw(10) << "编号" << setw(16) << "商品名称" << setw(15)
+                    << "生产厂家" << setw(10) << "商品类别" << setw(10) << "进价" << setw(10) <<
+                    "售价" << setw(10) << "库存" << setw(10) << "销量" << setw(10) << "入库时间" << endl;
+                cout << setiosflags(ios::left) << setw(10) << good.code << setw(16) << good.name << setw(15)
+                    << good.brand << setw(10) << good.type << setw(10) << good.pur_price << setw(10) <<
+                    good.price << setw(10) << good.num << setw(10) << good.salenum << setw(10) << good.date << endl;
+                cout << "该商品共售出" << good.salenum << "件，总共盈利：" << good.salenum * (good.price-good.pur_price) <<"元" << endl;
+
+
+                cout << "想要继续查询吗(y/n):";
+            }
+            if (hasData == false) {
+                cout << "该商品不存在！！！想继续查询吗(y/n):";
+            }
+
+        }
+        cin >> flag;
+        while (flag != 'y' && flag != 'n')
+        {
+            cout << "指令错误！！！！！<请输入y/n>" << endl;
+            cin >> flag;
+        }
+    } while (flag == 'y');
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    RevenueMenu();//选择查询方式
+}
+
+//所以商品的营收统计
+void RevenueAll() {
+    cout << "☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆ 总 营 收 ☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆☆" << endl;
+    Goods good;//存放返回的订单的单条数据
+    int sum = 0;//查询到的数据的总量
+    double all_revenue = 0.0;//总收入
+    char selectsql[150];//数据库查询语句
+    mysql_query(mysql, "set names gbk"); //设置编码格式（SET NAMES GBK也行），否则cmd下中文乱码  
+    sprintf_s(selectsql, "select * from goods");
+    if (mysql_query(mysql, selectsql))    //执行SQL语句
+    {
+        cout << "没有相关的商品！！！想继续查询吗(y/n):";
+    }
+    else {
+        //获取结果集  
+        if (!(res = mysql_store_result(mysql)))   //获得sql语句结束后返回的结果集  
+        {
+            printf("Couldn't get result from %s\n", mysql_error(mysql));
+        }
+        //是否有数据的标志
+        bool hasData = false;
+        //打印获取的数据
+        bool has_out = false;
+        while (column = mysql_fetch_row(res))   //在已知字段数量情况下，获取并打印下一行  
+        {
+            hasData = true;
+            if (has_out == false) {
+                has_out = true;
+                cout << "商品销售的详细信息为：" << endl;
+                cout << setiosflags(ios::left) << setw(10) << "编号" << setw(16) << "商品名称" << setw(15)
+                    << "生产厂家" << setw(10) << "商品类别" << setw(10) << "进价" << setw(10) <<
+                    "售价" << setw(10) << "库存" << setw(10) << "销量" << setw(10) << "入库时间" << setw(200) << "总盈利(元)" << endl;
+            }
+            good.code = atoi(column[0]);//char转换成int
+            good.name = column[1];
+            good.brand = column[2];
+            good.pur_price = strtod(column[3], NULL);
+            good.price = strtod(column[4], NULL);
+            good.type = column[5];
+            good.num = atoi(column[6]);
+            good.salenum = atoi(column[7]);
+            good.date = column[8];
+
+            cout << setiosflags(ios::left) << setw(10) << good.code << setw(16) << good.name << setw(15)
+                << good.brand << setw(10) << good.type << setw(10) << good.pur_price << setw(10) <<
+                good.price << setw(10) << good.num << setw(10) << good.salenum << setw(10) << good.date << "  " << setw(20) << good.salenum * (good.price - good.pur_price) << endl;
+            all_revenue += good.salenum * (good.price - good.pur_price);
+        }
+        cout << "\n你的总营收为:" << all_revenue << "元" << endl;
+    }
+    cout << endl;
+    cout << "……信息处理完毕……" << endl;
+    cout << "……按任意键返回主菜单……" << endl;
+    system("pause");
+    getchar();
+    system("cls");
+    RevenueMenu();//选择查询方式
+}
